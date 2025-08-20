@@ -1,0 +1,26 @@
+﻿name: Bug report
+description: Повідомлення про помилку
+labels: [bug]
+body:
+  - type: textarea
+    id: summary
+    attributes: { label: Опис }
+    validations: { required: true }
+  - type: textarea
+    id: steps
+    attributes: { label: Кроки для відтворення, placeholder: "1. ...
+2. ...
+3. ..." }
+    validations: { required: true }
+  - type: textarea
+    id: expected
+    attributes: { label: Очікувано }
+    validations: { required: true }
+  - type: textarea
+    id: actual
+    attributes: { label: Отримано }
+    validations: { required: true }
+  - type: dropdown
+    id: severity
+    attributes: { label: Пріоритет, options: [P0 (critical), P1 (high), P2 (normal), P3 (low)] }
+    validations: { required: true }
