@@ -11,7 +11,6 @@ import { httpLogger, logger } from './config/logger';
 
 const app = express();
 
-/** Довіряти проксі (якщо буде reverse-proxy) — коректні IP у rate-limit */
 app.set('trust proxy', 1);
 
 /** Логування HTTP */
@@ -19,21 +18,20 @@ app.use(httpLogger);
 
 /** Безпечні заголовки */
 app.use(helmet({
-  // приклад дозволу вбудованих ресурсів тільки з self (за потреби розширите)
-  contentSecurityPolicy: false, // вмикайте CSP, коли знатимете усі джерела
+  contentSecurityPolicy: false, 
   referrerPolicy: { policy: 'no-referrer' },
 }));
 
 /** Стиснення відповідей */
 app.use(compression());
 
-/** CORS (тільки дозволені origin-и) */
+/** CORS */
 app.use(cors(buildCorsOptions()));
 
 /** Парсер JSON */
 app.use(express.json({ limit: '1mb' }));
 
-/** Rate limit (за замовчуванням 100 запитів / 15 хв з одного IP) */
+/** Rate limit */
 const windowMin = Number(process.env.RATE_LIMIT_WINDOW_MIN || 15);
 const maxReq = Number(process.env.RATE_LIMIT_MAX || 100);
 app.use(rateLimit({

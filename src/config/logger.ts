@@ -2,28 +2,39 @@
 import pino from 'pino';
 import pinoHttp from 'pino-http';
 import { randomUUID } from 'crypto';
+import type { IncomingMessage, ServerResponse } from 'http';
 
 export const logger = pino({
   level: process.env.LOG_LEVEL || 'info',
-  transport: process.env.NODE_ENV !== 'production'
-    ? { target: 'pino-pretty', options: { colorize: true, translateTime: 'SYS:standard' } }
-    : undefined,
+  transport:
+    process.env.NODE_ENV !== 'production'
+      ? { target: 'pino-pretty', options: { colorize: true, translateTime: 'SYS:standard' } }
+      : undefined,
 });
 
 export const httpLogger = pinoHttp({
   logger,
-  genReqId(req) {
-    // пріоритезуємо кореляційний заголовок, інакше генеруємо новий
+
+  // кореляційний id
+  genReqId(req: IncomingMessage, _res: ServerResponse) {
     return (req.headers['x-request-id'] as string) || randomUUID();
   },
-  customLogLevel(res, err) {
-    if (err || res.statusCode >= 500) return 'error';
-    if (res.statusCode >= 400) return 'warn';
+
+  // рівень логу залежно від статусу
+  customLogLevel(_req: IncomingMessage, res: ServerResponse, err?: Error) {
+    const code = res.statusCode; // number
+    if (err || code >= 500) return 'error';
+    if (code >= 400) return 'warn';
     return 'info';
   },
+
+  // лаконічні серіалізатори
   serializers: {
-    // лаконічні логи
-    req(req) { return { method: req.method, url: req.url }; },
-    res(res) { return { statusCode: res.statusCode }; },
+    req(req: IncomingMessage) {
+      return { method: req.method, url: req.url };
+    },
+    res(res: ServerResponse) {
+      return { statusCode: res.statusCode };
+    },
   },
 });
