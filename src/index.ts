@@ -9,13 +9,17 @@ import rateLimit from 'express-rate-limit';
 import { buildCorsOptions } from './config/cors';
 import { httpLogger, logger } from './config/logger';
 
-// +++ Swagger + роути
+// Swagger + роути
 import { setupSwagger } from './config/swagger';
 import activityTypesRouter from './routes/activityTypes';
 import employersRouter from './routes/employers';
 import jobseekersRouter from './routes/jobseekers';
 import vacanciesRouter from './routes/vacancies';
 import agreementsRouter from './routes/agreements';
+import dbHealthRouter from './routes/dbHealth';
+
+// Mongo
+import { connectDB, disconnectDB } from './config/db';
 
 const app = express();
 
@@ -44,27 +48,30 @@ app.use(
   })
 );
 
-// ===== Swagger UI
+// Swagger
 setupSwagger(app);
 
-// ===== Health
+// Health
 app.get('/api/health', (_req: Request, res: Response) => {
   res.status(200).json({ ok: true });
 });
 
-// ===== Роути-стаби (перед 404)
+// DB health
+app.use('/api/db-health', dbHealthRouter);
+
+// API стуби
 app.use('/api/activity-types', activityTypesRouter);
 app.use('/api/employers', employersRouter);
 app.use('/api/jobseekers', jobseekersRouter);
 app.use('/api/vacancies', vacanciesRouter);
 app.use('/api/agreements', agreementsRouter);
 
-// ===== 404
+// 404
 app.use((req: Request, res: Response) => {
   res.status(404).json({ error: 'Not found', path: req.path });
 });
 
-// ===== Error handler
+// Error handler
 app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
   logger.error({ err }, '[UnhandledError]');
   const status = err?.status || 500;
@@ -73,8 +80,29 @@ app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
 });
 
 const PORT = Number(process.env.PORT) || 4000;
-app.listen(PORT, () => {
-  logger.info(`API running on :${PORT}`);
-});
+let server: import('http').Server;
+
+async function start() {
+  try {
+    await connectDB(process.env.MONGODB_URI || '');
+    server = app.listen(PORT, () => logger.info(`API running on :${PORT}`));
+  } catch (err) {
+    logger.error({ err }, 'Failed to start server');
+    process.exit(1);
+  }
+}
+
+async function shutdown() {
+  logger.warn('Shutting down...');
+  try {
+    await disconnectDB();
+  } catch {}
+  server?.close(() => process.exit(0));
+}
+
+process.on('SIGINT', shutdown);
+process.on('SIGTERM', shutdown);
+
+start();
 
 export default app;
