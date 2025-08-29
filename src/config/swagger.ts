@@ -166,6 +166,35 @@ const definition = {
       },
     },
 
+
+    '/api/db-health': {
+      get: {
+        tags: ['Health'],
+        summary: 'Database health',
+        responses: {
+          200: {
+            description: 'OK',
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  properties: {
+               
+                    ok: { type: 'boolean' },                
+                    state: { type: 'string' },            
+                    host: { type: 'string' },           
+                    name: { type: 'string' },           
+                    ping: { type: 'object' },         
+                    error: { type: 'string', nullable: true },
+                  },     
+                },   
+              },         
+            }, 
+          },
+        },
+      },
+    },
+
     '/api/activity-types': {
       get: {
         tags: ['ActivityTypes'],
