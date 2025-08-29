@@ -166,6 +166,7 @@ const definition = {
       },
     },
 
+
     '/api/db-health': {
       get: {
         tags: ['Health'],
@@ -193,7 +194,6 @@ const definition = {
         },
       },
     },
-
 
     '/api/activity-types': {
       get: {
