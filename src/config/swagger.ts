@@ -25,6 +25,7 @@ const definition = {
     { name: 'Jobseekers' },
     { name: 'Vacancies' },
     { name: 'Agreements' },
+    { name: 'Match' },
   ],
   components: {
     securitySchemes: {
@@ -714,6 +715,33 @@ const definition = {
         },
       },
     },
+    '/api/match/vacancies-for-jobseeker/{id}': {
+      get: {
+        tags: ['Match'],
+        summary: 'Vacancies for a jobseeker (scored)',
+        security: [{ bearerAuth: [] }],
+        parameters: [
+          { in: 'path', name: 'id', required: true, schema: { $ref: '#/components/schemas/Id' } },
+          { in: 'query', name: 'limit', schema: { type: 'integer', minimum: 1, maximum: 100 } },
+          { in: 'query', name: 'minScore', schema: { type: 'number', minimum: 0 } },
+        ],
+        responses: { 200: { description: 'OK' }, 401: { description: 'Unauthorized' }, 403: { description: 'Forbidden' }, 404: { description: 'Not found' } }
+      }
+    },
+    '/api/match/jobseekers-for-vacancy/{id}': {
+      get: {
+        tags: ['Match'],
+        summary: 'Jobseekers for a vacancy (scored)',
+        security: [{ bearerAuth: [] }],
+        parameters: [
+          { in: 'path', name: 'id', required: true, schema: { $ref: '#/components/schemas/Id' } },
+          { in: 'query', name: 'limit', schema: { type: 'integer', minimum: 1, maximum: 100 } },
+          { in: 'query', name: 'minScore', schema: { type: 'number', minimum: 0 } },
+        ],
+        responses: { 200: { description: 'OK' }, 401: { description: 'Unauthorized' }, 403: { description: 'Forbidden' }, 404: { description: 'Not found' } }
+      }
+    },
+
 
   },
 } as const;
