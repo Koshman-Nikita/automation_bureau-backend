@@ -63,11 +63,12 @@ const definition = {
           _id: { $ref: '#/components/schemas/Id' },
           name: { type: 'string' },
           city: { type: 'string' },
-          contacts: { type: 'string', example: 'hr@company.com, +380501112233' },
+          contacts: { type: 'string' },
+          createdAt: { type: 'string', format: 'date-time' },
+          updatedAt: { type: 'string', format: 'date-time' },
         },
-        required: ['_id', 'name'],
+        required: ['name'],
       },
-
       Jobseeker: {
         type: 'object',
         properties: {
@@ -75,12 +76,13 @@ const definition = {
           fullName: { type: 'string' },
           skills: { type: 'array', items: { type: 'string' } },
           city: { type: 'string' },
-          salaryDesired: { type: 'number', example: 50000 },
+          salaryDesired: { type: 'number' },
           status: { type: 'string', enum: ['active', 'inactive'] },
+          createdAt: { type: 'string', format: 'date-time' },
+          updatedAt: { type: 'string', format: 'date-time' },
         },
-        required: ['_id', 'fullName'],
+        required: ['fullName'],
       },
-
       Vacancy: {
         type: 'object',
         properties: {
@@ -89,11 +91,12 @@ const definition = {
           employerId: { $ref: '#/components/schemas/Id' },
           salaryMin: { type: 'number' },
           salaryMax: { type: 'number' },
-          status: { type: 'string', enum: ['open', 'closed'], default: 'open' },
+          status: { type: 'string', enum: ['open', 'closed'] },
+          createdAt: { type: 'string', format: 'date-time' },
+          updatedAt: { type: 'string', format: 'date-time' },
         },
-        required: ['_id', 'title', 'employerId', 'status'],
+        required: ['title', 'employerId'],
       },
-
       Agreement: {
         type: 'object',
         properties: {
@@ -101,11 +104,14 @@ const definition = {
           vacancyId: { $ref: '#/components/schemas/Id' },
           jobseekerId: { $ref: '#/components/schemas/Id' },
           date: { type: 'string', format: 'date' },
-          commissionPct: { type: 'number', example: 10 },
-          amount: { type: 'number', example: 15000 },
+          commissionPct: { type: 'number' },
+          amount: { type: 'number' },
+          createdAt: { type: 'string', format: 'date-time' },
+          updatedAt: { type: 'string', format: 'date-time' },
         },
-        required: ['_id', 'vacancyId', 'jobseekerId', 'date'],
+        required: ['vacancyId', 'jobseekerId', 'date'],
       },
+
 
       PaginationQuery: {
         type: 'object',
@@ -272,7 +278,7 @@ const definition = {
         responses: { 200: { description: 'OK' }, 401: { description: 'Unauthorized' } },
       },
     },
-    
+
     '/api/activity-types': {
       get: {
         tags: ['ActivityTypes'],
@@ -367,81 +373,348 @@ const definition = {
       },
     },
 
+    // ===== Employers =====
     '/api/employers': {
       get: {
         tags: ['Employers'],
         summary: 'List employers',
-        parameters: [{ in: 'query', name: 'page', schema: { type: 'integer' } },
-        { in: 'query', name: 'limit', schema: { type: 'integer' } },
-        { in: 'query', name: 'q', schema: { type: 'string' } }],
-        responses: { 200: { description: 'OK', content: { 'application/json': { schema: { $ref: '#/components/schemas/ListResponse_Employer' } } } } },
+        security: [{ bearerAuth: [] }],
+        parameters: [
+          { in: 'query', name: 'page', schema: { type: 'integer', minimum: 1 } },
+          { in: 'query', name: 'limit', schema: { type: 'integer', minimum: 1, maximum: 100 } },
+          { in: 'query', name: 'q', schema: { type: 'string' } },
+        ],
+        responses: {
+          200: { description: 'OK', content: { 'application/json': { schema: { $ref: '#/components/schemas/ListResponse_Employer' } } } },
+          401: { description: 'Unauthorized' }, 403: { description: 'Forbidden' },
+        },
+      },
+      post: {
+        tags: ['Employers'],
+        summary: 'Create employer',
+        security: [{ bearerAuth: [] }],
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object', properties: {
+                  name: { type: 'string', minLength: 2, maxLength: 200 },
+                  city: { type: 'string' },
+                  contacts: { type: 'string' },
+                }, required: ['name']
+              }
+            }
+          }
+        },
+        responses: {
+          201: { description: 'Created', content: { 'application/json': { schema: { $ref: '#/components/schemas/Employer' } } } },
+          401: { description: 'Unauthorized' }, 403: { description: 'Forbidden' }, 409: { description: 'Duplicate name' },
+        },
       },
     },
     '/api/employers/{id}': {
       get: {
-        tags: ['Employers'],
-        summary: 'Get employer by id',
+        tags: ['Employers'], summary: 'Get employer by id', security: [{ bearerAuth: [] }],
         parameters: [{ in: 'path', name: 'id', required: true, schema: { $ref: '#/components/schemas/Id' } }],
-        responses: { 501: { description: 'Not implemented' } },
+        responses: {
+          200: { description: 'OK', content: { 'application/json': { schema: { $ref: '#/components/schemas/Employer' } } } },
+          401: { description: 'Unauthorized' }, 403: { description: 'Forbidden' }, 404: { description: 'Not found' },
+        },
+      },
+      patch: {
+        tags: ['Employers'], summary: 'Update employer', security: [{ bearerAuth: [] }],
+        parameters: [{ in: 'path', name: 'id', required: true, schema: { $ref: '#/components/schemas/Id' } }],
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object', properties: {
+                  name: { type: 'string', minLength: 2, maxLength: 200 },
+                  city: { type: 'string' },
+                  contacts: { type: 'string' },
+                }
+              }
+            }
+          }
+        },
+        responses: {
+          200: { description: 'OK', content: { 'application/json': { schema: { $ref: '#/components/schemas/Employer' } } } },
+          401: { description: 'Unauthorized' }, 403: { description: 'Forbidden' }, 404: { description: 'Not found' },
+        },
+      },
+      delete: {
+        tags: ['Employers'], summary: 'Delete employer', security: [{ bearerAuth: [] }],
+        parameters: [{ in: 'path', name: 'id', required: true, schema: { $ref: '#/components/schemas/Id' } }],
+        responses: {
+          204: { description: 'No Content' },
+          401: { description: 'Unauthorized' }, 403: { description: 'Forbidden' }, 404: { description: 'Not found' },
+        },
       },
     },
 
+    // ===== Jobseekers =====
     '/api/jobseekers': {
       get: {
         tags: ['Jobseekers'],
         summary: 'List jobseekers',
-        parameters: [{ in: 'query', name: 'page', schema: { type: 'integer' } },
-        { in: 'query', name: 'limit', schema: { type: 'integer' } },
-        { in: 'query', name: 'q', schema: { type: 'string' } }],
-        responses: { 200: { description: 'OK', content: { 'application/json': { schema: { $ref: '#/components/schemas/ListResponse_Jobseeker' } } } } },
+        security: [{ bearerAuth: [] }],
+        parameters: [
+          { in: 'query', name: 'page', schema: { type: 'integer', minimum: 1 } },
+          { in: 'query', name: 'limit', schema: { type: 'integer', minimum: 1, maximum: 100 } },
+          { in: 'query', name: 'q', schema: { type: 'string' } },
+          { in: 'query', name: 'status', schema: { type: 'string', enum: ['active', 'inactive'] } },
+        ],
+        responses: {
+          200: { description: 'OK', content: { 'application/json': { schema: { $ref: '#/components/schemas/ListResponse_Jobseeker' } } } },
+          401: { description: 'Unauthorized' }, 403: { description: 'Forbidden' },
+        },
+      },
+      post: {
+        tags: ['Jobseekers'],
+        summary: 'Create jobseeker',
+        security: [{ bearerAuth: [] }],
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object', properties: {
+                  fullName: { type: 'string', minLength: 2, maxLength: 200 },
+                  skills: { type: 'array', items: { type: 'string' } },
+                  city: { type: 'string' },
+                  salaryDesired: { type: 'number' },
+                  status: { type: 'string', enum: ['active', 'inactive'] },
+                }, required: ['fullName']
+              }
+            }
+          }
+        },
+        responses: {
+          201: { description: 'Created', content: { 'application/json': { schema: { $ref: '#/components/schemas/Jobseeker' } } } },
+          401: { description: 'Unauthorized' }, 403: { description: 'Forbidden' },
+        },
       },
     },
     '/api/jobseekers/{id}': {
       get: {
-        tags: ['Jobseekers'],
-        summary: 'Get jobseeker by id',
+        tags: ['Jobseekers'], summary: 'Get jobseeker by id', security: [{ bearerAuth: [] }],
         parameters: [{ in: 'path', name: 'id', required: true, schema: { $ref: '#/components/schemas/Id' } }],
-        responses: { 501: { description: 'Not implemented' } },
+        responses: {
+          200: { description: 'OK', content: { 'application/json': { schema: { $ref: '#/components/schemas/Jobseeker' } } } },
+          401: { description: 'Unauthorized' }, 403: { description: 'Forbidden' }, 404: { description: 'Not found' },
+        },
+      },
+      patch: {
+        tags: ['Jobseekers'], summary: 'Update jobseeker', security: [{ bearerAuth: [] }],
+        parameters: [{ in: 'path', name: 'id', required: true, schema: { $ref: '#/components/schemas/Id' } }],
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object', properties: {
+                  fullName: { type: 'string', minLength: 2, maxLength: 200 },
+                  skills: { type: 'array', items: { type: 'string' } },
+                  city: { type: 'string' },
+                  salaryDesired: { type: 'number' },
+                  status: { type: 'string', enum: ['active', 'inactive'] },
+                }
+              }
+            }
+          }
+        },
+        responses: {
+          200: { description: 'OK', content: { 'application/json': { schema: { $ref: '#/components/schemas/Jobseeker' } } } },
+          401: { description: 'Unauthorized' }, 403: { description: 'Forbidden' }, 404: { description: 'Not found' },
+        },
+      },
+      delete: {
+        tags: ['Jobseekers'], summary: 'Delete jobseeker', security: [{ bearerAuth: [] }],
+        parameters: [{ in: 'path', name: 'id', required: true, schema: { $ref: '#/components/schemas/Id' } }],
+        responses: {
+          204: { description: 'No Content' },
+          401: { description: 'Unauthorized' }, 403: { description: 'Forbidden' }, 404: { description: 'Not found' },
+        },
       },
     },
 
+    // ===== Vacancies =====
     '/api/vacancies': {
       get: {
         tags: ['Vacancies'],
         summary: 'List vacancies',
-        parameters: [{ in: 'query', name: 'page', schema: { type: 'integer' } },
-        { in: 'query', name: 'limit', schema: { type: 'integer' } },
-        { in: 'query', name: 'q', schema: { type: 'string' } }],
-        responses: { 200: { description: 'OK', content: { 'application/json': { schema: { $ref: '#/components/schemas/ListResponse_Vacancy' } } } } },
+        security: [{ bearerAuth: [] }],
+        parameters: [
+          { in: 'query', name: 'page', schema: { type: 'integer', minimum: 1 } },
+          { in: 'query', name: 'limit', schema: { type: 'integer', minimum: 1, maximum: 100 } },
+          { in: 'query', name: 'q', schema: { type: 'string' } },
+          { in: 'query', name: 'status', schema: { type: 'string', enum: ['open', 'closed'] } },
+          { in: 'query', name: 'employerId', schema: { $ref: '#/components/schemas/Id' } },
+        ],
+        responses: {
+          200: { description: 'OK', content: { 'application/json': { schema: { $ref: '#/components/schemas/ListResponse_Vacancy' } } } },
+          401: { description: 'Unauthorized' }, 403: { description: 'Forbidden' },
+        },
+      },
+      post: {
+        tags: ['Vacancies'],
+        summary: 'Create vacancy',
+        security: [{ bearerAuth: [] }],
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object', properties: {
+                  title: { type: 'string', minLength: 2, maxLength: 200 },
+                  employerId: { $ref: '#/components/schemas/Id' },
+                  salaryMin: { type: 'number' },
+                  salaryMax: { type: 'number' },
+                  status: { type: 'string', enum: ['open', 'closed'] },
+                }, required: ['title', 'employerId']
+              }
+            }
+          }
+        },
+        responses: {
+          201: { description: 'Created', content: { 'application/json': { schema: { $ref: '#/components/schemas/Vacancy' } } } },
+          401: { description: 'Unauthorized' }, 403: { description: 'Forbidden' },
+        },
       },
     },
     '/api/vacancies/{id}': {
       get: {
-        tags: ['Vacancies'],
-        summary: 'Get vacancy by id',
+        tags: ['Vacancies'], summary: 'Get vacancy by id', security: [{ bearerAuth: [] }],
         parameters: [{ in: 'path', name: 'id', required: true, schema: { $ref: '#/components/schemas/Id' } }],
-        responses: { 501: { description: 'Not implemented' } },
+        responses: {
+          200: { description: 'OK', content: { 'application/json': { schema: { $ref: '#/components/schemas/Vacancy' } } } },
+          401: { description: 'Unauthorized' }, 403: { description: 'Forbidden' }, 404: { description: 'Not found' },
+        },
+      },
+      patch: {
+        tags: ['Vacancies'], summary: 'Update vacancy', security: [{ bearerAuth: [] }],
+        parameters: [{ in: 'path', name: 'id', required: true, schema: { $ref: '#/components/schemas/Id' } }],
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object', properties: {
+                  title: { type: 'string', minLength: 2, maxLength: 200 },
+                  employerId: { $ref: '#/components/schemas/Id' },
+                  salaryMin: { type: 'number' },
+                  salaryMax: { type: 'number' },
+                  status: { type: 'string', enum: ['open', 'closed'] },
+                }
+              }
+            }
+          }
+        },
+        responses: {
+          200: { description: 'OK', content: { 'application/json': { schema: { $ref: '#/components/schemas/Vacancy' } } } },
+          401: { description: 'Unauthorized' }, 403: { description: 'Forbidden' }, 404: { description: 'Not found' },
+        },
+      },
+      delete: {
+        tags: ['Vacancies'], summary: 'Delete vacancy', security: [{ bearerAuth: [] }],
+        parameters: [{ in: 'path', name: 'id', required: true, schema: { $ref: '#/components/schemas/Id' } }],
+        responses: {
+          204: { description: 'No Content' },
+          401: { description: 'Unauthorized' }, 403: { description: 'Forbidden' }, 404: { description: 'Not found' },
+        },
       },
     },
 
+    // ===== Agreements =====
     '/api/agreements': {
       get: {
         tags: ['Agreements'],
         summary: 'List agreements',
-        parameters: [{ in: 'query', name: 'page', schema: { type: 'integer' } },
-        { in: 'query', name: 'limit', schema: { type: 'integer' } },
-        { in: 'query', name: 'q', schema: { type: 'string' } }],
-        responses: { 200: { description: 'OK', content: { 'application/json': { schema: { $ref: '#/components/schemas/ListResponse_Agreement' } } } } },
+        security: [{ bearerAuth: [] }],
+        parameters: [
+          { in: 'query', name: 'page', schema: { type: 'integer', minimum: 1 } },
+          { in: 'query', name: 'limit', schema: { type: 'integer', minimum: 1, maximum: 100 } },
+          { in: 'query', name: 'vacancyId', schema: { $ref: '#/components/schemas/Id' } },
+          { in: 'query', name: 'jobseekerId', schema: { $ref: '#/components/schemas/Id' } },
+          { in: 'query', name: 'dateFrom', schema: { type: 'string', format: 'date' } },
+          { in: 'query', name: 'dateTo', schema: { type: 'string', format: 'date' } },
+        ],
+        responses: {
+          200: { description: 'OK', content: { 'application/json': { schema: { $ref: '#/components/schemas/ListResponse_Agreement' } } } },
+          401: { description: 'Unauthorized' }, 403: { description: 'Forbidden' },
+        },
+      },
+      post: {
+        tags: ['Agreements'],
+        summary: 'Create agreement',
+        security: [{ bearerAuth: [] }],
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object', properties: {
+                  vacancyId: { $ref: '#/components/schemas/Id' },
+                  jobseekerId: { $ref: '#/components/schemas/Id' },
+                  date: { type: 'string', format: 'date' },
+                  commissionPct: { type: 'number' },
+                  amount: { type: 'number' },
+                }, required: ['vacancyId', 'jobseekerId', 'date']
+              }
+            }
+          }
+        },
+        responses: {
+          201: { description: 'Created', content: { 'application/json': { schema: { $ref: '#/components/schemas/Agreement' } } } },
+          401: { description: 'Unauthorized' }, 403: { description: 'Forbidden' },
+        },
       },
     },
     '/api/agreements/{id}': {
       get: {
-        tags: ['Agreements'],
-        summary: 'Get agreement by id',
+        tags: ['Agreements'], summary: 'Get agreement by id', security: [{ bearerAuth: [] }],
         parameters: [{ in: 'path', name: 'id', required: true, schema: { $ref: '#/components/schemas/Id' } }],
-        responses: { 501: { description: 'Not implemented' } },
+        responses: {
+          200: { description: 'OK', content: { 'application/json': { schema: { $ref: '#/components/schemas/Agreement' } } } },
+          401: { description: 'Unauthorized' }, 403: { description: 'Forbidden' }, 404: { description: 'Not found' },
+        },
+      },
+      patch: {
+        tags: ['Agreements'], summary: 'Update agreement', security: [{ bearerAuth: [] }],
+        parameters: [{ in: 'path', name: 'id', required: true, schema: { $ref: '#/components/schemas/Id' } }],
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object', properties: {
+                  vacancyId: { $ref: '#/components/schemas/Id' },
+                  jobseekerId: { $ref: '#/components/schemas/Id' },
+                  date: { type: 'string', format: 'date' },
+                  commissionPct: { type: 'number' },
+                  amount: { type: 'number' },
+                }
+              }
+            }
+          }
+        },
+        responses: {
+          200: { description: 'OK', content: { 'application/json': { schema: { $ref: '#/components/schemas/Agreement' } } } },
+          401: { description: 'Unauthorized' }, 403: { description: 'Forbidden' }, 404: { description: 'Not found' },
+        },
+      },
+      delete: {
+        tags: ['Agreements'], summary: 'Delete agreement', security: [{ bearerAuth: [] }],
+        parameters: [{ in: 'path', name: 'id', required: true, schema: { $ref: '#/components/schemas/Id' } }],
+        responses: {
+          204: { description: 'No Content' },
+          401: { description: 'Unauthorized' }, 403: { description: 'Forbidden' }, 404: { description: 'Not found' },
+        },
       },
     },
+
   },
 } as const;
 

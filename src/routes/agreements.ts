@@ -1,23 +1,14 @@
 import { Router } from 'express';
 import { auth, hasRole } from '../middleware/auth';
 import { Policies } from '../policies/access';
+import { listAgreements, getAgreement, createAgreement, updateAgreement, deleteAgreement } from '../controllers/agreementController';
 
 const r = Router();
 
-r.get('/', auth, hasRole(...Policies.Agreements.read), async (_req, res) => {
-  res.json({ items: [], total: 0 });
-});
-
-r.post('/', auth, hasRole(...Policies.Agreements.create), async (_req, res) => {
-  res.status(201).json({ created: true });
-});
-
-r.patch('/:id', auth, hasRole(...Policies.Agreements.update), async (_req, res) => {
-  res.json({ updated: true });
-});
-
-r.delete('/:id', auth, hasRole(...Policies.Agreements.delete), async (_req, res) => {
-  res.status(204).end();
-});
+r.get('/', auth, hasRole(...Policies.Agreements.read), listAgreements);
+r.get('/:id', auth, hasRole(...Policies.Agreements.read), getAgreement);
+r.post('/', auth, hasRole(...Policies.Agreements.create), createAgreement);
+r.patch('/:id', auth, hasRole(...Policies.Agreements.update), updateAgreement);
+r.delete('/:id', auth, hasRole(...Policies.Agreements.delete), deleteAgreement);
 
 export default r;
