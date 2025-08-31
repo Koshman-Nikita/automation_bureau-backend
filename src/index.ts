@@ -19,10 +19,8 @@ import agreementsRouter from './routes/agreements';
 import dbHealthRouter from './routes/dbHealth';
 import matchRouter from './routes/match';
 
-
 // Mongo
 import { connectDB, disconnectDB } from './config/db';
-
 
 const app = express();
 
@@ -70,6 +68,7 @@ app.use('/api/jobseekers', jobseekersRouter);
 app.use('/api/vacancies', vacanciesRouter);
 app.use('/api/agreements', agreementsRouter);
 app.use('/api/match', matchRouter);
+
 // 404
 app.use((req: Request, res: Response) => {
   res.status(404).json({ error: 'Not found', path: req.path });

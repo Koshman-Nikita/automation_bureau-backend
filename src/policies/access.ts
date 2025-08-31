@@ -1,4 +1,4 @@
-import { Role } from '../middleware/auth';
+import { Role } from '../types/roles';
 
 /**
  * Базові політики по сутностях.
