@@ -17,6 +17,7 @@ import jobseekersRouter from './routes/jobseekers';
 import vacanciesRouter from './routes/vacancies';
 import agreementsRouter from './routes/agreements';
 import dbHealthRouter from './routes/dbHealth';
+import matchRouter from './routes/match';
 
 // Mongo
 import { connectDB, disconnectDB } from './config/db';
@@ -66,6 +67,7 @@ app.use('/api/employers', employersRouter);
 app.use('/api/jobseekers', jobseekersRouter);
 app.use('/api/vacancies', vacanciesRouter);
 app.use('/api/agreements', agreementsRouter);
+app.use('/api/match', matchRouter);
 
 // 404
 app.use((req: Request, res: Response) => {
