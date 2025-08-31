@@ -51,8 +51,10 @@ const definition = {
           _id: { $ref: '#/components/schemas/Id' },
           name: { type: 'string', example: 'Interview scheduled' },
           isActive: { type: 'boolean', default: true },
+          createdAt: { type: 'string', format: 'date-time' },
+          updatedAt: { type: 'string', format: 'date-time' },
         },
-        required: ['_id', 'name'],
+        required: ['name'],
       },
 
       Employer: {
@@ -118,9 +120,12 @@ const definition = {
         type: 'object',
         properties: {
           items: { type: 'array', items: { $ref: '#/components/schemas/ActivityType' } },
-          total: { type: 'integer', example: 0 },
+          total: { type: 'integer' },
+          page: { type: 'integer' },
+          limit: { type: 'integer' },
         },
       },
+
       ListResponse_Employer: {
         type: 'object',
         properties: {
@@ -178,17 +183,17 @@ const definition = {
                 schema: {
                   type: 'object',
                   properties: {
-               
-                    ok: { type: 'boolean' },                
-                    state: { type: 'string' },            
-                    host: { type: 'string' },           
-                    name: { type: 'string' },           
-                    ping: { type: 'object' },         
+
+                    ok: { type: 'boolean' },
+                    state: { type: 'string' },
+                    host: { type: 'string' },
+                    name: { type: 'string' },
+                    ping: { type: 'object' },
                     error: { type: 'string', nullable: true },
-                  },     
-                },   
-              },         
-            }, 
+                  },
+                },
+              },
+            },
           },
         },
       },
@@ -267,45 +272,98 @@ const definition = {
         responses: { 200: { description: 'OK' }, 401: { description: 'Unauthorized' } },
       },
     },
-
-
+    
     '/api/activity-types': {
       get: {
         tags: ['ActivityTypes'],
         summary: 'List activity types',
-        parameters: [{ in: 'query', name: 'page', schema: { type: 'integer' } },
-                     { in: 'query', name: 'limit', schema: { type: 'integer' } },
-                     { in: 'query', name: 'q', schema: { type: 'string' } }],
+        security: [{ bearerAuth: [] }],
+        parameters: [
+          { in: 'query', name: 'page', schema: { type: 'integer', minimum: 1 } },
+          { in: 'query', name: 'limit', schema: { type: 'integer', minimum: 1, maximum: 100 } },
+          { in: 'query', name: 'q', schema: { type: 'string' } },
+          { in: 'query', name: 'isActive', schema: { type: 'boolean' } },
+        ],
         responses: {
           200: { description: 'OK', content: { 'application/json': { schema: { $ref: '#/components/schemas/ListResponse_ActivityType' } } } },
+          401: { description: 'Unauthorized' },
+          403: { description: 'Forbidden' },
         },
       },
       post: {
         tags: ['ActivityTypes'],
-        summary: 'Create activity type (stub)',
-        requestBody: { required: true, content: { 'application/json': { schema: { $ref: '#/components/schemas/ActivityType' } } } },
-        responses: { 501: { description: 'Not implemented' } },
+        summary: 'Create activity type',
+        security: [{ bearerAuth: [] }],
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object', properties: {
+                  name: { type: 'string', minLength: 2, maxLength: 100 },
+                  isActive: { type: 'boolean', default: true }
+                }, required: ['name']
+              }
+            }
+          }
+        },
+        responses: {
+          201: { description: 'Created', content: { 'application/json': { schema: { $ref: '#/components/schemas/ActivityType' } } } },
+          401: { description: 'Unauthorized' },
+          403: { description: 'Forbidden' },
+          409: { description: 'Duplicate name' }
+        },
       },
     },
     '/api/activity-types/{id}': {
       get: {
         tags: ['ActivityTypes'],
-        summary: 'Get activity type by id',
+        summary: 'Get by id',
+        security: [{ bearerAuth: [] }],
         parameters: [{ in: 'path', name: 'id', required: true, schema: { $ref: '#/components/schemas/Id' } }],
-        responses: { 501: { description: 'Not implemented' } },
+        responses: {
+          200: { description: 'OK', content: { 'application/json': { schema: { $ref: '#/components/schemas/ActivityType' } } } },
+          401: { description: 'Unauthorized' },
+          403: { description: 'Forbidden' },
+          404: { description: 'Not found' },
+        },
       },
-      put: {
+      patch: {
         tags: ['ActivityTypes'],
-        summary: 'Update activity type',
+        summary: 'Update',
+        security: [{ bearerAuth: [] }],
         parameters: [{ in: 'path', name: 'id', required: true, schema: { $ref: '#/components/schemas/Id' } }],
-        requestBody: { required: true, content: { 'application/json': { schema: { $ref: '#/components/schemas/ActivityType' } } } },
-        responses: { 501: { description: 'Not implemented' } },
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object', properties: {
+                  name: { type: 'string', minLength: 2, maxLength: 100 },
+                  isActive: { type: 'boolean' }
+                }
+              }
+            }
+          }
+        },
+        responses: {
+          200: { description: 'OK', content: { 'application/json': { schema: { $ref: '#/components/schemas/ActivityType' } } } },
+          401: { description: 'Unauthorized' },
+          403: { description: 'Forbidden' },
+          404: { description: 'Not found' },
+        },
       },
       delete: {
         tags: ['ActivityTypes'],
-        summary: 'Delete activity type',
+        summary: 'Delete',
+        security: [{ bearerAuth: [] }],
         parameters: [{ in: 'path', name: 'id', required: true, schema: { $ref: '#/components/schemas/Id' } }],
-        responses: { 501: { description: 'Not implemented' } },
+        responses: {
+          204: { description: 'No Content' },
+          401: { description: 'Unauthorized' },
+          403: { description: 'Forbidden' },
+          404: { description: 'Not found' },
+        },
       },
     },
 
@@ -314,8 +372,8 @@ const definition = {
         tags: ['Employers'],
         summary: 'List employers',
         parameters: [{ in: 'query', name: 'page', schema: { type: 'integer' } },
-                     { in: 'query', name: 'limit', schema: { type: 'integer' } },
-                     { in: 'query', name: 'q', schema: { type: 'string' } }],
+        { in: 'query', name: 'limit', schema: { type: 'integer' } },
+        { in: 'query', name: 'q', schema: { type: 'string' } }],
         responses: { 200: { description: 'OK', content: { 'application/json': { schema: { $ref: '#/components/schemas/ListResponse_Employer' } } } } },
       },
     },
@@ -333,8 +391,8 @@ const definition = {
         tags: ['Jobseekers'],
         summary: 'List jobseekers',
         parameters: [{ in: 'query', name: 'page', schema: { type: 'integer' } },
-                     { in: 'query', name: 'limit', schema: { type: 'integer' } },
-                     { in: 'query', name: 'q', schema: { type: 'string' } }],
+        { in: 'query', name: 'limit', schema: { type: 'integer' } },
+        { in: 'query', name: 'q', schema: { type: 'string' } }],
         responses: { 200: { description: 'OK', content: { 'application/json': { schema: { $ref: '#/components/schemas/ListResponse_Jobseeker' } } } } },
       },
     },
@@ -352,8 +410,8 @@ const definition = {
         tags: ['Vacancies'],
         summary: 'List vacancies',
         parameters: [{ in: 'query', name: 'page', schema: { type: 'integer' } },
-                     { in: 'query', name: 'limit', schema: { type: 'integer' } },
-                     { in: 'query', name: 'q', schema: { type: 'string' } }],
+        { in: 'query', name: 'limit', schema: { type: 'integer' } },
+        { in: 'query', name: 'q', schema: { type: 'string' } }],
         responses: { 200: { description: 'OK', content: { 'application/json': { schema: { $ref: '#/components/schemas/ListResponse_Vacancy' } } } } },
       },
     },
@@ -371,8 +429,8 @@ const definition = {
         tags: ['Agreements'],
         summary: 'List agreements',
         parameters: [{ in: 'query', name: 'page', schema: { type: 'integer' } },
-                     { in: 'query', name: 'limit', schema: { type: 'integer' } },
-                     { in: 'query', name: 'q', schema: { type: 'string' } }],
+        { in: 'query', name: 'limit', schema: { type: 'integer' } },
+        { in: 'query', name: 'q', schema: { type: 'string' } }],
         responses: { 200: { description: 'OK', content: { 'application/json': { schema: { $ref: '#/components/schemas/ListResponse_Agreement' } } } } },
       },
     },
