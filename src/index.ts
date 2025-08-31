@@ -8,7 +8,7 @@ import rateLimit from 'express-rate-limit';
 
 import { buildCorsOptions } from './config/cors';
 import { httpLogger, logger } from './config/logger';
-
+import authRouter from './routes/auth';
 // Swagger + роути
 import { setupSwagger } from './config/swagger';
 import activityTypesRouter from './routes/activityTypes';
@@ -59,6 +59,7 @@ app.get('/api/health', (_req: Request, res: Response) => {
 // DB health
 app.use('/api/db-health', dbHealthRouter);
 
+app.use('/api/auth', authRouter);
 // API стуби
 app.use('/api/activity-types', activityTypesRouter);
 app.use('/api/employers', employersRouter);

@@ -194,6 +194,80 @@ const definition = {
       },
     },
 
+    // ===== Auth =====
+    '/api/auth/register': {
+      post: {
+        tags: ['Auth'],
+        summary: 'Register (create user)',
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                properties: {
+                  email: { type: 'string', format: 'email' },
+                  password: { type: 'string', minLength: 6 },
+                  role: { type: 'string', enum: ['admin', 'manager', 'employer', 'jobseeker'] },
+                },
+                required: ['email', 'password'],
+              },
+            },
+          },
+        },
+        responses: { 201: { description: 'Created' }, 409: { description: 'Email in use' } },
+      },
+    },
+    '/api/auth/login': {
+      post: {
+        tags: ['Auth'],
+        summary: 'Login',
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                properties: {
+                  email: { type: 'string', format: 'email' },
+                  password: { type: 'string' },
+                },
+                required: ['email', 'password'],
+              },
+            },
+          },
+        },
+        responses: { 200: { description: 'OK' }, 401: { description: 'Invalid credentials' } },
+      },
+    },
+    '/api/auth/refresh': {
+      post: {
+        tags: ['Auth'],
+        summary: 'Refresh tokens',
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                properties: { refreshToken: { type: 'string' } },
+                required: ['refreshToken'],
+              },
+            },
+          },
+        },
+        responses: { 200: { description: 'OK' }, 401: { description: 'Invalid token' } },
+      },
+    },
+    '/api/auth/me': {
+      get: {
+        tags: ['Auth'],
+        summary: 'Current user',
+        security: [{ bearerAuth: [] }],
+        responses: { 200: { description: 'OK' }, 401: { description: 'Unauthorized' } },
+      },
+    },
+
 
     '/api/activity-types': {
       get: {
