@@ -21,6 +21,18 @@ import dbHealthRouter from './routes/dbHealth';
 // Mongo
 import { connectDB, disconnectDB } from './config/db';
 
+// Swagger + роути
+import { setupSwagger } from './config/swagger';
+import activityTypesRouter from './routes/activityTypes';
+import employersRouter from './routes/employers';
+import jobseekersRouter from './routes/jobseekers';
+import vacanciesRouter from './routes/vacancies';
+import agreementsRouter from './routes/agreements';
+import dbHealthRouter from './routes/dbHealth';
+
+// Mongo
+import { connectDB, disconnectDB } from './config/db';
+
 const app = express();
 
 app.set('trust proxy', 1);
