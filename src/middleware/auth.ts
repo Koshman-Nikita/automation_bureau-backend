@@ -1,51 +1,44 @@
+// src/middleware/auth.ts
 import { Request, Response, NextFunction } from 'express';
-import { verifyAccessToken } from '../utils/jwt';
+import jwt from 'jsonwebtoken';
+import type { Role } from '../types/roles';
 
-export type Role = 'admin' | 'manager' | 'employer' | 'jobseeker';
+const ACCESS_SECRET = process.env.JWT_SECRET || 'dev_secret_change_me';
 
-export interface AuthedUser {
-  sub: string;   // user id
+export interface JwtPayload {
+  sub: string;     // user id
   role: Role;
+  iat?: number;
+  exp?: number;
 }
 
-export interface AuthedRequest extends Request {
-  user?: AuthedUser;
+export interface AuthRequest extends Request {
+  user?: { id: string; role: Role; email?: string };
 }
 
-/** Обов'язкова аутентифікація (Bearer) */
-export function auth(req: AuthedRequest, res: Response, next: NextFunction) {
-  const authHeader = req.headers.authorization || '';
-  const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : '';
+// Перевіряє токен та кладе user в req.user
+export function auth(req: AuthRequest, res: Response, next: NextFunction) {
+  const hdr = req.headers.authorization || '';
+  const token = hdr.startsWith('Bearer ') ? hdr.slice(7) : '';
+
   if (!token) return res.status(401).json({ error: 'Unauthorized' });
 
   try {
-    const payload = verifyAccessToken(token);
-    req.user = { sub: payload.sub, role: payload.role as Role };
+    const decoded = jwt.verify(token, ACCESS_SECRET) as JwtPayload;
+    req.user = { id: decoded.sub, role: decoded.role };
     next();
   } catch {
-    return res.status(401).json({ error: 'Invalid token' });
+    return res.status(401).json({ error: 'Unauthorized' });
   }
 }
 
-/** Пропускає тільки користувачів із будь-якою з перелічених ролей */
+// Дозволяє лише вказані ролі
 export function hasRole(...roles: Role[]) {
-  return (req: AuthedRequest, res: Response, next: NextFunction) => {
-    if (!req.user) return res.status(401).json({ error: 'Unauthorized' });
-    if (!roles.includes(req.user.role)) return res.status(403).json({ error: 'Forbidden' });
+  return (req: AuthRequest, res: Response, next: NextFunction) => {
+    const r = req.user?.role;
+    if (!r || !roles.includes(r)) {
+      return res.status(403).json({ error: 'Forbidden' });
+    }
     next();
-  };
-}
-
-/** Дозволити власнику ресурсу АБО ролям */
-export function isSelfOrRole(getOwnerId: (req: AuthedRequest) => string | null, ...roles: Role[]) {
-  return (req: AuthedRequest, res: Response, next: NextFunction) => {
-    if (!req.user) return res.status(401).json({ error: 'Unauthorized' });
-
-    const ownerId = getOwnerId(req);
-    const isOwner = ownerId && ownerId === req.user.sub;
-    const inRole = roles.includes(req.user.role);
-
-    if (isOwner || inRole) return next();
-    return res.status(403).json({ error: 'Forbidden' });
   };
 }
