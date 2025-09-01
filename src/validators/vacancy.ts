@@ -2,7 +2,7 @@ import { z } from 'zod';
 
 export const createVacancySchema = z.object({
   title: z.string().min(2).max(200),
-  employerId: z.string().min(10), // ObjectId as string
+  employerId: z.string().min(10), 
   salaryMin: z.coerce.number().nonnegative().optional(),
   salaryMax: z.coerce.number().nonnegative().optional(),
   status: z.enum(['open', 'closed']).optional().default('open'),

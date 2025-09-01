@@ -1,9 +1,5 @@
 import { Role } from '../types/roles';
 
-/**
- * Базові політики по сутностях.
- * Можна розширювати прапорцями (create/read/update/delete) або функціями.
- */
 export const Policies = {
   ActivityTypes: {
     create: ['admin', 'manager'] as Role[],

@@ -6,7 +6,6 @@ import { vacanciesForJobseeker, jobseekersForVacancy } from '../controllers/matc
 
 const r = Router();
 
-// Хто може дивитись матчінг (можеш розширити за потреби)
 const allow: Role[] = ['admin', 'manager'];
 
 r.get('/vacancies-for-jobseeker/:id', auth, hasRole(...allow), vacanciesForJobseeker);

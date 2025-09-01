@@ -1,44 +1,43 @@
 // src/middleware/auth.ts
 import { Request, Response, NextFunction } from 'express';
-import jwt from 'jsonwebtoken';
-import type { Role } from '../types/roles';
+import { verifyAccessToken, JwtPayload } from '../utils/jwt';
 
-const ACCESS_SECRET = process.env.JWT_SECRET || 'dev_secret_change_me';
+// Ролі
+export type Role = 'admin' | 'manager' | 'employer' | 'jobseeker';
 
-export interface JwtPayload {
-  sub: string;     // user id
-  role: Role;
-  iat?: number;
-  exp?: number;
+declare global {
+  namespace Express {
+    interface Request {
+      user?: JwtPayload;
+    }
+  }
 }
 
-export interface AuthRequest extends Request {
-  user?: { id: string; role: Role; email?: string };
-}
+//Перевіряє Bearer-токен в Authorization.
+export function auth(req: Request, res: Response, next: NextFunction) {
+  const header = req.headers.authorization;
+  if (!header?.startsWith('Bearer ')) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
 
-// Перевіряє токен та кладе user в req.user
-export function auth(req: AuthRequest, res: Response, next: NextFunction) {
-  const hdr = req.headers.authorization || '';
-  const token = hdr.startsWith('Bearer ') ? hdr.slice(7) : '';
-
+  const token = header.slice(7).trim();
   if (!token) return res.status(401).json({ error: 'Unauthorized' });
 
   try {
-    const decoded = jwt.verify(token, ACCESS_SECRET) as JwtPayload;
-    req.user = { id: decoded.sub, role: decoded.role };
+    const payload: JwtPayload = verifyAccessToken(token);
+    req.user = payload; // { sub, role, iat, exp }
     next();
   } catch {
     return res.status(401).json({ error: 'Unauthorized' });
   }
 }
 
-// Дозволяє лише вказані ролі
-export function hasRole(...roles: Role[]) {
-  return (req: AuthRequest, res: Response, next: NextFunction) => {
-    const r = req.user?.role;
-    if (!r || !roles.includes(r)) {
-      return res.status(403).json({ error: 'Forbidden' });
-    }
+//Guard за ролями
+export function hasRole(...allowed: Role[]) {
+  return (req: Request, res: Response, next: NextFunction) => {
+    const role = req.user?.role as Role | undefined;
+    if (!role) return res.status(401).json({ error: 'Unauthorized' });
+    if (!allowed.includes(role)) return res.status(403).json({ error: 'Forbidden' });
     next();
   };
 }
