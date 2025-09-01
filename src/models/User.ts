@@ -1,28 +1,31 @@
 import { Schema, model, Document } from 'mongoose';
+import bcrypt from 'bcryptjs';
 
 export type UserRole = 'admin' | 'manager' | 'employer' | 'jobseeker';
 
 export interface IUser extends Document {
   email: string;
-  passwordHash: string;
+  password?: string; // select: false
   role: UserRole;
   createdAt: Date;
   updatedAt: Date;
-  comparePassword(plain: string): Promise<boolean>;
 }
 
 const userSchema = new Schema<IUser>(
   {
-    email: { type: String, required: true, unique: true, lowercase: true, trim: true },
-    passwordHash: { type: String, required: true },
-    role: { type: String, enum: ['admin', 'manager', 'employer', 'jobseeker'], default: 'manager', index: true },
+    email: { type: String, unique: true, required: true, index: true },
+    password: { type: String, required: true, select: false },
+    role: { type: String, enum: ['admin', 'manager', 'employer', 'jobseeker'], required: true },
   },
   { timestamps: true }
 );
 
-import bcrypt from 'bcryptjs';
-userSchema.methods.comparePassword = function (plain: string) {
-  return bcrypt.compare(plain, this.passwordHash);
-};
+//pre-save
+userSchema.pre('save', async function (next) {
+  if (!this.isModified('password')) return next();
+  const salt = await bcrypt.genSalt(10);
+  this.password = await bcrypt.hash(this.password as string, salt);
+  next();
+});
 
-export const User = model<IUser>('User', userSchema);
+export default model<IUser>('User', userSchema);
