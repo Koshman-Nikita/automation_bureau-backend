@@ -43,11 +43,11 @@ export function createApp() {
   // ---- Swagger 
   setupSwagger(app);
 
-  // ---- Health
+  // Health
   app.get('/api/health', (_req, res) => res.json({ ok: true }));
 
-  // ---- API routes
-  app.use('/api/auth', authRouter);         // ← ВАЖЛИВО: /api/auth
+  // API routes
+  app.use('/api/auth', authRouter);         
   app.use('/api/activity-types', activityTypesRouter);
   app.use('/api/employers', employersRouter);
   app.use('/api/jobseekers', jobseekersRouter);
@@ -55,7 +55,7 @@ export function createApp() {
   app.use('/api/agreements', agreementsRouter);
   app.use('/api/match', matchRouter);
 
-  // ---- 404
+  // 404
   app.use((_req, res) => res.status(404).json({ error: 'Not found' }));
 
   // ---- Global error handler 

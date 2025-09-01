@@ -1,7 +1,7 @@
 import 'dotenv/config';
 import { createServer } from 'http';
 import { createApp } from './app';
-import { connectDB } from './config/db';
+import { connectDB }  from './config/db';
 
 const { PORT = 4000, MONGODB_URI } = process.env;
 

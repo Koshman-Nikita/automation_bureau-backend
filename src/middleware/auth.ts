@@ -2,10 +2,9 @@
 import { Request, Response, NextFunction } from 'express';
 import { verifyAccessToken, JwtPayload } from '../utils/jwt';
 
-// Ролі, які підтримує застосунок
+// Ролі
 export type Role = 'admin' | 'manager' | 'employer' | 'jobseeker';
 
-// Додаємо user до Express.Request (щоб не кастити до any)
 declare global {
   namespace Express {
     interface Request {
@@ -14,10 +13,7 @@ declare global {
   }
 }
 
-/**
- * Перевіряє Bearer-токен в Authorization.
- * Якщо валідний — кладе payload у req.user.
- */
+//Перевіряє Bearer-токен в Authorization.
 export function auth(req: Request, res: Response, next: NextFunction) {
   const header = req.headers.authorization;
   if (!header?.startsWith('Bearer ')) {
@@ -36,9 +32,7 @@ export function auth(req: Request, res: Response, next: NextFunction) {
   }
 }
 
-/**
- * Guard за ролями. Використання: hasRole('admin','manager')
- */
+//Guard за ролями
 export function hasRole(...allowed: Role[]) {
   return (req: Request, res: Response, next: NextFunction) => {
     const role = req.user?.role as Role | undefined;
