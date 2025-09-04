@@ -1,10 +1,21 @@
+// src/routes/activityTypes.ts
 import { Router } from 'express';
+import { auth, hasRole } from '../middleware/auth';
+import {
+  listActivityTypes,
+  getActivityType,
+  createActivityType,
+  updateActivityType,
+  deleteActivityType,
+} from '../controllers/activityTypeController';
+
 const r = Router();
 
-r.get('/', (_req, res) => res.json({ items: [], total: 0 }));
-r.get('/:id', (_req, res) => res.status(501).json({ error: 'Not implemented' }));
-r.post('/', (_req, res) => res.status(501).json({ error: 'Not implemented' }));
-r.put('/:id', (_req, res) => res.status(501).json({ error: 'Not implemented' }));
-r.delete('/:id', (_req, res) => res.status(501).json({ error: 'Not implemented' }));
+r.get('/', auth, listActivityTypes);
+r.get('/:id', auth, getActivityType);
+
+r.post('/', auth, hasRole('admin', 'manager'), createActivityType);
+r.patch('/:id', auth, hasRole('admin', 'manager'), updateActivityType);
+r.delete('/:id', auth, hasRole('admin', 'manager'), deleteActivityType);
 
 export default r;

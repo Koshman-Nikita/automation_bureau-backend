@@ -1,31 +1,37 @@
-import { Schema, model, Document } from 'mongoose';
+import { Schema, model, HydratedDocument } from 'mongoose';
 import bcrypt from 'bcryptjs';
 
 export type UserRole = 'admin' | 'manager' | 'employer' | 'jobseeker';
 
-export interface IUser extends Document {
+export interface IUser {
   email: string;
-  password?: string; // select: false
+  password: string;     
   role: UserRole;
-  createdAt: Date;
-  updatedAt: Date;
+  createdAt?: Date;
+  updatedAt?: Date;
 }
 
-const userSchema = new Schema<IUser>(
+const UserSchema = new Schema<IUser>(
   {
-    email: { type: String, unique: true, required: true, index: true },
+    email: { type: String, required: true, unique: true, lowercase: true, trim: true },
     password: { type: String, required: true, select: false },
-    role: { type: String, enum: ['admin', 'manager', 'employer', 'jobseeker'], required: true },
+    role: { type: String, required: true, enum: ['admin', 'manager', 'employer', 'jobseeker'], default: 'manager' },
   },
   { timestamps: true }
 );
 
-//pre-save
-userSchema.pre('save', async function (next) {
-  if (!this.isModified('password')) return next();
+UserSchema.pre('save', async function (next) {
+  const doc = this as HydratedDocument<IUser>;
+  if (!doc.isModified('password')) return next();
   const salt = await bcrypt.genSalt(10);
-  this.password = await bcrypt.hash(this.password as string, salt);
+  doc.password = await bcrypt.hash(doc.password, salt);
   next();
 });
 
-export default model<IUser>('User', userSchema);
+UserSchema.methods.comparePassword = async function (candidate: string) {
+  return bcrypt.compare(candidate, this.password);
+};
+
+const User = model<IUser>('User', UserSchema);
+export type UserDoc = HydratedDocument<IUser>;
+export default User;
