@@ -7,14 +7,12 @@ export interface IActivityType extends Document {
   updatedAt: Date;
 }
 
-const activityTypeSchema = new Schema<IActivityType>(
+const ActivityTypeSchema = new Schema<IActivityType>(
   {
-    name: { type: String, required: true, trim: true, unique: true },
-    isActive: { type: Boolean, default: true, index: true },
+    name: { type: String, required: true, trim: true, minlength: 2 },
+    isActive: { type: Boolean, default: true },
   },
   { timestamps: true }
 );
 
-activityTypeSchema.index({ name: 'text' });
-
-export const ActivityType = model<IActivityType>('ActivityType', activityTypeSchema);
+export default model<IActivityType>('ActivityType', ActivityTypeSchema);

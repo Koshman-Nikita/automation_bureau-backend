@@ -2,42 +2,25 @@
 import { Request, Response, NextFunction } from 'express';
 import { verifyAccessToken, JwtPayload } from '../utils/jwt';
 
-// Ролі
-export type Role = 'admin' | 'manager' | 'employer' | 'jobseeker';
-
-declare global {
-  namespace Express {
-    interface Request {
-      user?: JwtPayload;
-    }
-  }
-}
-
-//Перевіряє Bearer-токен в Authorization.
 export function auth(req: Request, res: Response, next: NextFunction) {
-  const header = req.headers.authorization;
-  if (!header?.startsWith('Bearer ')) {
-    return res.status(401).json({ error: 'Unauthorized' });
-  }
+  const h = req.headers.authorization;
+  if (!h || !h.startsWith('Bearer ')) return res.status(401).json({ error: 'Unauthorized' });
 
-  const token = header.slice(7).trim();
-  if (!token) return res.status(401).json({ error: 'Unauthorized' });
-
+  const token = h.slice(7).trim();
   try {
     const payload: JwtPayload = verifyAccessToken(token);
-    req.user = payload; // { sub, role, iat, exp }
+    (req as any).user = payload; 
     next();
   } catch {
     return res.status(401).json({ error: 'Unauthorized' });
   }
 }
 
-//Guard за ролями
-export function hasRole(...allowed: Role[]) {
+export function hasRole(...allowed: string[]) {
   return (req: Request, res: Response, next: NextFunction) => {
-    const role = req.user?.role as Role | undefined;
-    if (!role) return res.status(401).json({ error: 'Unauthorized' });
-    if (!allowed.includes(role)) return res.status(403).json({ error: 'Forbidden' });
-    next();
+    const user = (req as any).user as JwtPayload | undefined;
+    if (!user) return res.status(401).json({ error: 'Unauthorized' });
+    if (!allowed.length || allowed.includes(user.role)) return next();
+    return res.status(403).json({ error: 'Forbidden' });
   };
 }
