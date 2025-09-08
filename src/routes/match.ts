@@ -1,14 +1,25 @@
-// src/routes/match.ts
 import { Router } from 'express';
 import { auth, hasRole } from '../middleware/auth';
-import type { Role } from '../types/roles';
-import { vacanciesForJobseeker, jobseekersForVacancy } from '../controllers/matchController';
+import { Policies } from '../policies/access';
+import {
+  vacanciesForJobseeker,
+  jobseekersForVacancy,
+} from '../controllers/matchController';
 
 const r = Router();
 
-const allow: Role[] = ['admin', 'manager'];
+r.get(
+  '/for-jobseeker/:id',
+  auth,
+  hasRole(...Policies.Vacancies.read),
+  vacanciesForJobseeker
+);
 
-r.get('/vacancies-for-jobseeker/:id', auth, hasRole(...allow), vacanciesForJobseeker);
-r.get('/jobseekers-for-vacancy/:id',   auth, hasRole(...allow), jobseekersForVacancy);
+r.get(
+  '/for-vacancy/:id',
+  auth,
+  hasRole(...Policies.Jobseekers.read),
+  jobseekersForVacancy
+);
 
 export default r;

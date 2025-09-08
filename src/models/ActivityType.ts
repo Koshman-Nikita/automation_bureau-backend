@@ -2,17 +2,18 @@ import { Schema, model, Document } from 'mongoose';
 
 export interface IActivityType extends Document {
   name: string;
-  isActive: boolean;
   createdAt: Date;
   updatedAt: Date;
 }
 
-const ActivityTypeSchema = new Schema<IActivityType>(
+const activityTypeSchema = new Schema<IActivityType>(
   {
-    name: { type: String, required: true, trim: true, minlength: 2 },
-    isActive: { type: Boolean, default: true },
+    name: { type: String, required: true, trim: true, unique: true, index: true },
   },
   { timestamps: true }
 );
 
-export default model<IActivityType>('ActivityType', ActivityTypeSchema);
+activityTypeSchema.index({ name: 'text' });
+
+export const ActivityType = model<IActivityType>('ActivityType', activityTypeSchema);
+export default ActivityType;

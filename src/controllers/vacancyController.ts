@@ -1,49 +1,106 @@
 import { Request, Response } from 'express';
-import { Vacancy } from '../models/Vacancy';
-import { createVacancySchema, updateVacancySchema, listVacancyQuery } from '../validators/vacancy';
+import Vacancy, { IVacancy } from '../models/Vacancy';
 
+function extractPayload(body: any): Partial<IVacancy> {
+  const skills: string[] = Array.isArray(body?.skills)
+    ? body.skills.map((s: any) => String(s).trim()).filter(Boolean)
+    : [];
+
+  const payload: Partial<IVacancy> = {
+    title: typeof body?.title === 'string' ? body.title.trim() : undefined,
+    position: typeof body?.position === 'string' ? body.position.trim() : undefined,
+    employerId: body?.employerId,
+    activityType: body?.activityType ? String(body.activityType).trim() : undefined,
+    salary:
+      body?.salary === null || body?.salary === undefined
+        ? null
+        : Number(body.salary),
+    status: body?.status === 'closed' ? 'closed' : 'open',
+    skills,
+  };
+
+  Object.keys(payload).forEach(
+    (k) => (payload as any)[k] === undefined && delete (payload as any)[k]
+  );
+  return payload;
+}
+
+/** GET /api/vacancies */
 export async function listVacancies(req: Request, res: Response) {
-  const parsed = listVacancyQuery.safeParse(req.query);
-  if (!parsed.success) return res.status(400).json({ error: 'Invalid query', issues: parsed.error.issues });
+  const page = Math.max(1, Number(req.query.page) || 1);
+  const limit = Math.max(1, Math.min(100, Number(req.query.limit) || 10));
+  const q = String(req.query.q || '').trim();
 
-  const { page = 1, limit = 10, q, status, employerId } = parsed.data;
   const filter: any = {};
-  if (q) filter.$text = { $search: q };
-  if (status) filter.status = status;
-  if (employerId) filter.employerId = employerId;
+  if (q) {
+    const rx = { $regex: q, $options: 'i' };
+    filter.$or = [
+      { title: rx },
+      { position: rx },
+      { activityType: rx },
+      { skills: { $elemMatch: rx } },
+    ];
+  }
 
   const [items, total] = await Promise.all([
-    Vacancy.find(filter).sort({ createdAt: -1 }).skip((page - 1) * limit).limit(limit),
+    Vacancy.find(filter)
+      .sort({ createdAt: -1 })
+      .skip((page - 1) * limit)
+      .limit(limit)
+      .select('_id title position employerId activityType skills salary status createdAt updatedAt')
+      .lean({ getters: true }),
     Vacancy.countDocuments(filter),
   ]);
+
   res.json({ items, total, page, limit });
 }
 
+/** GET /api/vacancies/:id */
 export async function getVacancy(req: Request, res: Response) {
-  const doc = await Vacancy.findById(req.params.id);
-  if (!doc) return res.status(404).json({ error: 'Not found' });
-  res.json({ item: doc });
+  const item = await Vacancy.findById(req.params.id)
+    .select('_id title position employerId activityType skills salary status createdAt updatedAt')
+    .lean({ getters: true });
+
+  if (!item) return res.status(404).json({ error: 'Vacancy not found' });
+  res.json({ item });
 }
 
+/** POST /api/vacancies */
 export async function createVacancy(req: Request, res: Response) {
-  const parsed = createVacancySchema.safeParse(req.body);
-  if (!parsed.success) return res.status(400).json({ error: 'Invalid payload', issues: parsed.error.issues });
-
-  const created = await Vacancy.create(parsed.data);
-  res.status(201).json({ item: created });
+  const payload = extractPayload(req.body);
+  try {
+    const created = await Vacancy.create(payload);
+    const item = (await Vacancy.findById(created._id)
+      .select('_id title position employerId activityType skills salary status createdAt updatedAt')
+      .lean({ getters: true }))!;
+    res.status(201).json({ item });
+  } catch (e: any) {
+    res.status(400).json({ error: e?.message || 'Create failed' });
+  }
 }
 
+/** PATCH /api/vacancies/:id */
 export async function updateVacancy(req: Request, res: Response) {
-  const parsed = updateVacancySchema.safeParse(req.body);
-  if (!parsed.success) return res.status(400).json({ error: 'Invalid payload', issues: parsed.error.issues });
+  const payload = extractPayload(req.body);
+  try {
+    const updated = await Vacancy.findByIdAndUpdate(
+      req.params.id,
+      { $set: payload },
+      { new: true, runValidators: true }
+    )
+      .select('_id title position employerId activityType skills salary status createdAt updatedAt')
+      .lean({ getters: true });
 
-  const updated = await Vacancy.findByIdAndUpdate(req.params.id, parsed.data, { new: true });
-  if (!updated) return res.status(404).json({ error: 'Not found' });
-  res.json({ item: updated });
+    if (!updated) return res.status(404).json({ error: 'Vacancy not found' });
+    res.json({ item: updated });
+  } catch (e: any) {
+    res.status(400).json({ error: e?.message || 'Update failed' });
+  }
 }
 
+/** DELETE /api/vacancies/:id */
 export async function deleteVacancy(req: Request, res: Response) {
   const deleted = await Vacancy.findByIdAndDelete(req.params.id);
-  if (!deleted) return res.status(404).json({ error: 'Not found' });
-  res.status(204).end();
+  if (!deleted) return res.status(404).json({ error: 'Vacancy not found' });
+  res.json({ ok: true });
 }

@@ -13,7 +13,6 @@ r.get('/', async (_req, res) => {
   let error: string | null = null;
 
   try {
-    // admin().command доступний тільки після з’єднання
     ping = await mongoose.connection.db?.admin().command({ ping: 1 });
     ok = true;
   } catch (e: any) {
