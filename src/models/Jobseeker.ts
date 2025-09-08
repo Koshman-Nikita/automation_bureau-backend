@@ -1,11 +1,14 @@
 import { Schema, model, Document } from 'mongoose';
 
+export type JobseekerStatus = 'searching' | 'employed';
+
 export interface IJobseeker extends Document {
   fullName: string;
-  skills: string[];
+  qualifications: string[];  
+  activityType?: string | null; 
   city?: string;
-  salaryDesired?: number;
-  status: 'active' | 'inactive';
+  salaryDesired?: number | null;
+  status: JobseekerStatus;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -13,14 +16,22 @@ export interface IJobseeker extends Document {
 const jobseekerSchema = new Schema<IJobseeker>(
   {
     fullName: { type: String, required: true, trim: true },
-    skills: { type: [String], default: [] },
+    qualifications: { type: [String], default: [], index: true },
+    activityType: { type: String, default: null, index: true },
     city: { type: String, trim: true },
-    salaryDesired: { type: Number },
-    status: { type: String, enum: ['active', 'inactive'], default: 'active', index: true },
+    salaryDesired: { type: Number, default: null },
+    status: { type: String, enum: ['searching', 'employed'], default: 'searching', index: true },
   },
   { timestamps: true }
 );
 
-jobseekerSchema.index({ fullName: 'text', skills: 'text', city: 'text' });
+// текстовий пошук
+jobseekerSchema.index({
+  fullName: 'text',
+  qualifications: 'text',
+  activityType: 'text',
+  city: 'text',
+});
 
 export const Jobseeker = model<IJobseeker>('Jobseeker', jobseekerSchema);
+export default Jobseeker;

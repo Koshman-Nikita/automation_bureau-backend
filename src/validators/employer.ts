@@ -1,15 +1,23 @@
 import { z } from 'zod';
 
 export const createEmployerSchema = z.object({
-  name: z.string().min(2).max(200),
-  city: z.string().max(120).optional(),
-  contacts: z.string().max(500).optional(),
+  name: z.string().trim().min(2, 'Мінімум 2 символи'),
+  phone: z.string().trim().min(5).optional(),
+  address: z.string().trim().optional(),
+  city: z.string().trim().optional(),    
+  activityType: z.string().trim().optional(),
 });
 
-export const updateEmployerSchema = createEmployerSchema.partial();
+export const updateEmployerSchema = z.object({
+  name: z.string().trim().min(2).optional(),
+  phone: z.string().trim().min(5).optional(),
+  address: z.string().trim().optional(),
+  city: z.string().trim().optional(),
+  activityType: z.string().trim().optional(),
+});
 
 export const listEmployerQuery = z.object({
-  page: z.coerce.number().min(1).default(1).optional(),
-  limit: z.coerce.number().min(1).max(100).default(10).optional(),
+  page: z.coerce.number().int().positive().optional(),
+  limit: z.coerce.number().int().positive().max(100).optional(),
   q: z.string().trim().optional(),
 });
