@@ -4,7 +4,7 @@ import cors from 'cors';
 import compression from 'compression';
 import rateLimit from 'express-rate-limit';
 import { setupSwagger } from './config/swagger';
-
+import statsRouter from './routes/stats';
 import authRouter from './routes/auth';
 import activityTypesRouter from './routes/activityTypes';
 import employersRouter from './routes/employers';
@@ -47,7 +47,8 @@ export function createApp() {
   app.get('/api/health', (_req, res) => res.json({ ok: true }));
 
   // API routes
-  app.use('/api/auth', authRouter);         
+  app.use('/api/auth', authRouter);
+  app.use('/api/stats', statsRouter);         
   app.use('/api/activity-types', activityTypesRouter);
   app.use('/api/employers', employersRouter);
   app.use('/api/jobseekers', jobseekersRouter);
