@@ -9,9 +9,8 @@ import {
   updateAgreementSchema,
 } from '../validators/agreement';
 
-// безпечне приведення до string | undefined
 function toStrId(v: Types.ObjectId | string | null | undefined): string | undefined {
-  if (v == null) return undefined; // ловить і null, і undefined
+  if (v == null) return undefined;
   return typeof v === 'string' ? v : (v as any)?.toString?.();
 }
 
